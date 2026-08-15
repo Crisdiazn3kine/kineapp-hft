@@ -73,7 +73,7 @@ export default function AdminDashboard() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-base)", padding: "28px 32px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, margin: 0 }}>Panel de dueño — KineApp HFT</h1>
+        <h1 style={{ fontSize: 24, margin: 0 }}>Panel de Administrador — KineApp HFT</h1>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="btn-primary" onClick={() => setShowForm(!showForm)}>+ Nuevo kinesiólogo</button>
           <button className="btn-secondary" onClick={async () => { await adminLogout(); navigate("/admin/login"); }}>Cerrar sesión</button>
