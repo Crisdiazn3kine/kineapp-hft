@@ -30,7 +30,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/admin/login" element={<AdminLogin />} />
+       <Route path="/admin/login" element={<Navigate to="/login" replace />} />
       <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/agenda" element={<PrivateRoute><Agenda /></PrivateRoute>} />
