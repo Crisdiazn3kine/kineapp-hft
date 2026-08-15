@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
 export default function Login() {
-  const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,8 +16,22 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      navigate("/");
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+
+      const adminSnap = await getDoc(doc(db, "admins", cred.user.uid));
+      if (adminSnap.exists()) {
+        navigate("/admin");
+        return;
+      }
+
+      const kineSnap = await getDoc(doc(db, "kinesiologos", cred.user.uid));
+      if (kineSnap.exists() && kineSnap.data().activo !== false) {
+        navigate("/");
+        return;
+      }
+
+      await signOut(auth);
+      setError("Esta cuenta no tiene acceso activo. Contacta a tu administrador.");
     } catch (err) {
       setError("Correo o contraseña incorrectos.");
     } finally {
@@ -49,8 +64,8 @@ export default function Login() {
           {loading ? "Entrando..." : "Entrar"}
         </button>
 
-        <div style={{ marginTop: 16, fontSize: 13, color: "var(--text-dim)", textAlign: "center" }}>
-          ¿No tienes cuenta? <Link to="/registro" style={{ color: "var(--orange)" }}>Regístrate</Link>
+        <div style={{ marginTop: 16, fontSize: 12, color: "var(--text-dim)", textAlign: "center" }}>
+          ¿No tienes cuenta? Pídesela a tu administrador.
         </div>
       </form>
     </div>
