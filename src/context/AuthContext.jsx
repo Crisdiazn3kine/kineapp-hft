@@ -18,11 +18,19 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
       if (u) {
         const snap = await getDoc(doc(db, "kinesiologos", u.uid));
-        setProfile(snap.exists() ? snap.data() : null);
+        const data = snap.exists() ? snap.data() : null;
+        if (data && data.activo === false) {
+          await signOut(auth);
+          setUser(null);
+          setProfile(null);
+        } else {
+          setUser(u);
+          setProfile(data);
+        }
       } else {
+        setUser(null);
         setProfile(null);
       }
       setLoading(false);
