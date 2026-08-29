@@ -1,13 +1,864 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>kineapp-hft</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KineApp HFT</title>
+<style>
+:root{
+  --bg:#14151a; --bg2:#1c1e26; --bg3:#23252f; --bd:#2e303c;
+  --tx:#f4f4f5; --tx2:#9a9ba5;
+  --or:#ff7a1a; --or2:#ff7a1a22; --orh:#ff8c3d;
+  --ok:#3ecf8e; --rd:#ff5c5c;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+.hidden{display:none!important;}
+input,select,textarea{background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:9px 11px;border-radius:8px;font-family:inherit;font-size:13px;width:100%;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--or);}
+textarea{min-height:60px;resize:vertical;}
+label{font-size:12px;color:var(--tx2);display:block;margin-bottom:4px;}
+.btn{border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-p{background:var(--or);color:#14151a;}
+.btn-p:hover{background:var(--orh);}
+.btn-s{background:transparent;color:var(--tx);border:1px solid var(--bd);font-weight:500;}
+.btn-s:hover{border-color:var(--or);}
+.btn-d{background:transparent;color:var(--rd);border:1px solid var(--rd);font-weight:500;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:18px;margin-bottom:10px;}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;}
+.b-ok{background:#3ecf8e22;color:var(--ok);}
+.b-warn{background:#ff5c5c22;color:var(--rd);}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.stack{display:flex;flex-direction:column;gap:10px;}
+.dim{color:var(--tx2);}
+.small{font-size:12px;}
+h1{font-size:24px;margin:0 0 4px;}
+h2{font-size:18px;margin:0;}
+.field{margin-bottom:12px;}
+
+/* LOGIN */
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.login-box{width:340px;}
+.logo{display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+.logo .dot{width:10px;height:10px;border-radius:3px;background:var(--or);}
+.logo b{font-size:18px;}
+.logo span{color:var(--or);}
+
+/* SHELL */
+#app{display:flex;min-height:100vh;}
+.sb{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--bd);padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.nb{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:var(--tx2);cursor:pointer;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;}
+.nb:hover{color:var(--tx);}
+.nb.on{background:var(--or2);color:var(--or);}
+main{flex:1;padding:28px 32px;overflow-x:auto;}
+
+/* Modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;}
+.modal{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:22px;width:460px;max-width:100%;max-height:88vh;overflow-y:auto;}
+
+@media print{
+  .sb,.no-print,button{display:none!important;}
+  body{background:#fff;color:#000;}
+  .card{border:1px solid #ccc;background:#fff;color:#000;}
+  main{padding:0!important;}
+}
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <div class="login-box card">
+    <div class="logo"><div class="dot"></div><b>KineApp <span>HFT</span></b></div>
+    <h2 style="margin-bottom:18px;">Iniciar sesión</h2>
+    <div class="field"><label>Correo</label><input id="login-email" type="email" placeholder="tucorreo@ejemplo.com"></div>
+    <div class="field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••••"></div>
+    <div id="login-err" class="small" style="color:var(--rd);margin-bottom:10px;"></div>
+    <button class="btn btn-p" style="width:100%;" onclick="doLogin()">Entrar</button>
+    <p class="small dim" style="text-align:center;margin-top:14px;">¿No tienes cuenta? Pídesela a tu administrador.</p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <aside class="sb">
+    <div class="logo" style="padding:0 6px 20px;"><div class="dot"></div><b>KineApp <span>HFT</span></b></div>
+    <nav id="nav" class="stack" style="gap:2px;flex:1;"></nav>
+    <div style="border-top:1px solid var(--bd);padding-top:12px;margin-top:12px;">
+      <div id="user-name" class="small dim" style="margin-bottom:8px;"></div>
+      <button class="btn btn-s" style="width:100%;font-size:12px;" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<div id="admin-app" class="hidden">
+  <div style="padding:28px 32px;max-width:1000px;margin:0 auto;">
+    <div class="row" style="margin-bottom:20px;">
+      <h1 style="margin:0;">Panel de administrador — KineApp HFT</h1>
+      <div class="stack" style="flex-direction:row;gap:10px;">
+        <button class="btn btn-p" onclick="toggleAdminForm()">+ Nuevo kinesiólogo</button>
+        <button class="btn btn-s" onclick="doLogout()">Cerrar sesión</button>
+      </div>
+    </div>
+    <div id="admin-stats" class="grid2" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;"></div>
+    <div id="admin-form-wrap"></div>
+    <div id="admin-aviso"></div>
+    <div id="admin-list" class="card" style="padding:0;overflow:hidden;"></div>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+
+<script type="module">
+import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+  createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import {
+  getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, collection,
+  onSnapshot, query, orderBy, where, arrayUnion, arrayRemove, writeBatch, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAt7NGrdFT8IppfoHYulqunBAzqtCiWOdU",
+  authDomain: "kineapphft-13fe7.firebaseapp.com",
+  projectId: "kineapphft-13fe7",
+  storageBucket: "kineapphft-13fe7.firebasestorage.app",
+  messagingSenderId: "6430647602",
+  appId: "1:6430647602:web:2542fac02f7bb60820232b"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const CATEGORIAS = ["Lumbalgia","Cervicalgia","Dolor patelofemoral","Síndrome subacromial","Esguince de tobillo","Core / estabilidad","Post-cirugía LCA/menisco","Post-fractura tobillo","Post-fractura brazo","Post-cirugía hombro","Otra"];
+const ETIQ = { sesiones:"Sesión", dias:"Día", semanas:"Semana" };
+const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const DIA_IDX = [1,2,3,4,5,6,0];
+
+let STATE = {
+  role: null,        // 'admin' | 'kine'
+  uid: null,
+  profile: null,
+  page: 'dashboard',
+  alumnoAbierto: null,
+  planActivoId: {},  // por alumnoId
+  unsubs: [],
+};
+
+function $(sel){ return document.querySelector(sel); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function clearUnsubs(){ STATE.unsubs.forEach(u=>u&&u()); STATE.unsubs=[]; }
+
+/* ===================== AUTH ===================== */
+window.doLogin = async function(){
+  const email = $('#login-email').value.trim();
+  const pass = $('#login-pass').value;
+  const errBox = $('#login-err');
+  errBox.textContent = '';
+  if(!email || !pass){ errBox.textContent = 'Completa correo y contraseña.'; return; }
+  try{
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const adminSnap = await getDoc(doc(db,'admins',cred.user.uid));
+    if(adminSnap.exists()){ return; } // onAuthStateChanged se encarga del resto
+    const kineSnap = await getDoc(doc(db,'kinesiologos',cred.user.uid));
+    if(kineSnap.exists() && kineSnap.data().activo !== false){ return; }
+    await signOut(auth);
+    errBox.textContent = 'Esta cuenta no tiene acceso activo. Contacta a tu administrador.';
+  }catch(err){
+    errBox.textContent = 'Correo o contraseña incorrectos.';
+  }
+};
+
+window.doLogout = async function(){
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, async (user) => {
+  clearUnsubs();
+  hideAll();
+  if(!user){ STATE = {...STATE, role:null, uid:null, profile:null}; $('#login').classList.remove('hidden'); return; }
+
+  const adminSnap = await getDoc(doc(db,'admins',user.uid));
+  if(adminSnap.exists()){
+    STATE.role='admin'; STATE.uid=user.uid;
+    $('#admin-app').classList.remove('hidden');
+    initAdminPanel();
+    return;
+  }
+
+  const kineSnap = await getDoc(doc(db,'kinesiologos',user.uid));
+  if(kineSnap.exists() && kineSnap.data().activo !== false){
+    STATE.role='kine'; STATE.uid=user.uid; STATE.profile = kineSnap.data();
+    updateDoc(doc(db,'kinesiologos',user.uid), { ultimoAcceso: serverTimestamp() }).catch(()=>{});
+    $('#app').classList.remove('hidden');
+    $('#user-name').textContent = STATE.profile.nombre || 'Kinesiólogo';
+    renderNav();
+    goPage('dashboard');
+    return;
+  }
+
+  // cuenta sin perfil válido
+  await signOut(auth);
+  $('#login').classList.remove('hidden');
+  $('#login-err').textContent = 'Esta cuenta no tiene acceso activo.';
+});
+
+function hideAll(){
+  $('#login').classList.add('hidden');
+  $('#app').classList.add('hidden');
+  $('#admin-app').classList.add('hidden');
+}
+
+/* ===================== NAV (KINE) ===================== */
+const NAV_ITEMS = [
+  {id:'dashboard', label:'Dashboard', icon:'📊'},
+  {id:'agenda', label:'Agenda', icon:'📅'},
+  {id:'alumnos', label:'Alumnos', icon:'🧑‍🤝‍🧑'},
+  {id:'pagos', label:'Pagos', icon:'💰'},
+  {id:'biblioteca', label:'Biblioteca', icon:'📚'},
+];
+function renderNav(){
+  $('#nav').innerHTML = NAV_ITEMS.map(it=>`
+    <button class="nb ${STATE.page===it.id?'on':''}" onclick="goPage('${it.id}')">${it.icon} ${it.label}</button>
+  `).join('');
+}
+window.goPage = function(page){
+  STATE.page = page;
+  STATE.alumnoAbierto = null;
+  renderNav();
+  clearUnsubs();
+  if(page==='dashboard') renderDashboard();
+  if(page==='agenda') renderAgenda();
+  if(page==='alumnos') renderAlumnos();
+  if(page==='pagos') renderPagos();
+  if(page==='biblioteca') renderBiblioteca();
+};
+
+function avisoArriendoHTML(){
+  const p = STATE.profile;
+  if(!p || !p.proximoPago) return '';
+  const dias = Math.ceil((new Date(p.proximoPago) - new Date())/86400000);
+  if(dias < 0) return `<div class="card no-print" style="border-color:var(--or);">⚠️ Tu arriendo está vencido. Contacta a tu administrador.</div>`;
+  if(dias <= 5) return `<div class="card no-print" style="border-color:var(--or);">⚠️ Tu próximo pago de arriendo vence en ${dias} día(s) (${p.proximoPago}).</div>`;
+  return '';
+}
+
+/* ===================== DASHBOARD ===================== */
+function renderDashboard(){
+  $('#main').innerHTML = `
+    ${avisoArriendoHTML()}
+    <h1>Hola, ${esc((STATE.profile.nombre||'kine').split(' ')[0])} 👋</h1>
+    <p class="dim" style="margin-top:0;">${DIAS[[6,0,1,2,3,4,5][new Date().getDay()]]||''}, aquí tienes tu resumen.</p>
+    <div class="grid2" style="grid-template-columns:1.4fr 1fr;margin-top:20px;">
+      <div class="card"><h3 style="margin-top:0;">Agenda de hoy</h3><div id="dash-citas" class="dim small">Cargando...</div></div>
+      <div class="card"><h3 style="margin-top:0;">Pagos atrasados</h3><div id="dash-pagos" class="dim small">Cargando...</div></div>
+    </div>
+  `;
+  const hoy = new Date().getDay();
+  const q1 = query(collection(db,'kinesiologos',STATE.uid,'agenda'), where('dia','==',hoy));
+  STATE.unsubs.push(onSnapshot(q1, snap=>{
+    const rows = snap.docs.map(d=>d.data()).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+    $('#dash-citas').innerHTML = rows.length ? rows.map(c=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--bd);"><span>${esc(c.alumnoNombre)}</span><b style="color:var(--or)">${esc(c.hora)}</b></div>`).join('') : 'No tienes sesiones hoy.';
+  }));
+  const q2 = query(collection(db,'kinesiologos',STATE.uid,'alumnos'), where('estadoPago','==','atrasado'));
+  STATE.unsubs.push(onSnapshot(q2, snap=>{
+    const rows = snap.docs.map(d=>d.data());
+    $('#dash-pagos').innerHTML = rows.length ? rows.map(a=>`<div class="row" style="padding:6px 0;"><span>${esc(a.nombre)}</span><span class="badge b-warn">Atrasado</span></div>`).join('') : 'Todos al día 🎉';
+  }));
+}
+
+/* ===================== AGENDA ===================== */
+function renderAgenda(){
+  if(STATE._diaSel==null) STATE._diaSel = new Date().getDay()===0?0:DIA_IDX[new Date().getDay()-1]!==undefined?[1,2,3,4,5,6,0][new Date().getDay()-1]:1;
+  STATE._diaSel = [1,2,3,4,5,6,0][ (new Date().getDay()+6)%7 ];
+  $('#main').innerHTML = `
+    <div class="row" style="margin-bottom:18px;"><h1>Agenda</h1><button class="btn btn-p" onclick="toggleAgendaForm()">+ Agendar sesión</button></div>
+    <div id="dias-tabs" class="stack" style="flex-direction:row;flex-wrap:wrap;margin-bottom:18px;"></div>
+    <div id="agenda-form-wrap"></div>
+    <div class="card"><h3 id="dia-titulo" style="margin-top:0;"></h3><div id="citas-dia"></div></div>
+  `;
+  $('#dias-tabs').innerHTML = DIAS.map((d,i)=>`<button class="btn ${STATE._diaSel===DIA_IDX[i]?'btn-p':'btn-s'}" style="font-size:12px;" onclick="setDia(${DIA_IDX[i]})">${d}</button>`).join('');
+
+  let alumnosCache = [];
+  STATE.unsubs.push(onSnapshot(query(collection(db,'kinesiologos',STATE.uid,'alumnos'), orderBy('nombre')), snap=>{
+    alumnosCache = snap.docs.map(d=>({id:d.id,...d.data()}));
+    window._alumnosCache = alumnosCache;
+  }));
+
+  STATE.unsubs.push(onSnapshot(collection(db,'kinesiologos',STATE.uid,'agenda'), snap=>{
+    window._citasCache = snap.docs.map(d=>({id:d.id,...d.data()}));
+    pintarDia();
+  }));
+  pintarDia();
+}
+window.setDia = function(d){ STATE._diaSel = d; renderAgenda(); };
+function pintarDia(){
+  const idx = DIAS.indexOf ? DIA_IDX.indexOf(STATE._diaSel) : 0;
+  $('#dia-titulo') && ($('#dia-titulo').textContent = DIAS[DIA_IDX.indexOf(STATE._diaSel)]);
+  const citas = (window._citasCache||[]).filter(c=>c.dia===STATE._diaSel).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  const box = $('#citas-dia');
+  if(!box) return;
+  box.innerHTML = citas.length ? citas.map(c=>`
+    <div class="row" style="padding:12px 0;border-bottom:1px solid var(--bd);">
+      <div><b>${esc(c.alumnoNombre)}</b><div class="small dim">${tipoLabel(c)}</div></div>
+      <div class="row" style="gap:12px;"><b style="color:var(--or)">${esc(c.hora)}</b><button class="btn btn-s btn-sm" onclick="eliminarCita('${c.id}')">Eliminar</button></div>
+    </div>`).join('') : '<p class="dim small">No hay sesiones agendadas este día.</p>';
+}
+function tipoLabel(c){
+  if(c.tipo==='unica') return 'Sesión única';
+  if(c.tipo==='permanente') return 'Permanente (semanal)';
+  if(c.tipo==='paquete_sesiones') return `Paquete de ${c.cantidad} sesiones`;
+  if(c.tipo==='paquete_semanas') return `Paquete de ${c.cantidad} semanas`;
+  return '';
+}
+window.toggleAgendaForm = function(){
+  const wrap = $('#agenda-form-wrap');
+  if(wrap.innerHTML){ wrap.innerHTML=''; return; }
+  const alumnos = window._alumnosCache||[];
+  wrap.innerHTML = `
+    <div class="card" style="max-width:420px;">
+      <div class="field"><label>Alumno</label><select id="ag-alumno">${alumnos.map(a=>`<option value="${a.id}">${esc(a.nombre)}</option>`).join('')}</select></div>
+      <div class="field"><label>Hora</label><input id="ag-hora" type="time"></div>
+      <div class="field"><label>¿Cómo se agenda?</label>
+        <select id="ag-tipo" onchange="onTipoChange()">
+          <option value="unica">Única (solo este día)</option>
+          <option value="permanente">Permanente (semanal)</option>
+          <option value="paquete_sesiones">Por número de sesiones</option>
+          <option value="paquete_semanas">Por número de semanas</option>
+        </select>
+      </div>
+      <div class="field hidden" id="ag-cant-wrap"><label>Cantidad</label><input id="ag-cant" type="number" min="1"></div>
+      <button class="btn btn-p" onclick="crearCita()">Guardar</button>
+    </div>`;
+};
+window.onTipoChange = function(){
+  const t = $('#ag-tipo').value;
+  $('#ag-cant-wrap').classList.toggle('hidden', !(t==='paquete_sesiones'||t==='paquete_semanas'));
+};
+window.crearCita = async function(){
+  const alumnoId = $('#ag-alumno').value;
+  const alumno = (window._alumnosCache||[]).find(a=>a.id===alumnoId);
+  const hora = $('#ag-hora').value;
+  const tipo = $('#ag-tipo').value;
+  const cantidad = (tipo==='paquete_sesiones'||tipo==='paquete_semanas') ? Number($('#ag-cant').value)||1 : null;
+  if(!alumno || !hora) return alert('Completa alumno y hora.');
+  await addDoc(collection(db,'kinesiologos',STATE.uid,'agenda'), {
+    alumnoId: alumno.id, alumnoNombre: alumno.nombre, dia: STATE._diaSel, hora, tipo, cantidad, creadoEl: new Date().toISOString()
+  });
+  $('#agenda-form-wrap').innerHTML = '';
+};
+window.eliminarCita = async function(id){
+  if(!confirm('¿Eliminar esta sesión de la agenda?')) return;
+  await deleteDoc(doc(db,'kinesiologos',STATE.uid,'agenda',id));
+};
+
+/* ===================== ALUMNOS ===================== */
+function renderAlumnos(){
+  $('#main').innerHTML = `
+    <div class="row" style="margin-bottom:18px;"><h1>Alumnos</h1><button class="btn btn-p" onclick="toggleAlumnoForm()">+ Nuevo alumno</button></div>
+    <div id="alumno-form-wrap"></div>
+    <div id="alumnos-list" class="card" style="padding:0;overflow:hidden;"></div>
+  `;
+  STATE.unsubs.push(onSnapshot(query(collection(db,'kinesiologos',STATE.uid,'alumnos'), orderBy('nombre')), snap=>{
+    const rows = snap.docs.map(d=>({id:d.id,...d.data()}));
+    $('#alumnos-list').innerHTML = rows.length ? rows.map(a=>`
+      <div class="row" style="padding:14px 20px;border-bottom:1px solid var(--bd);cursor:pointer;" onclick="abrirAlumno('${a.id}')">
+        <div><b>${esc(a.nombre)}</b><div class="small dim">${esc(a.patologia||'Sin diagnóstico registrado')}</div></div>
+        <span class="badge ${a.estadoPago==='atrasado'?'b-warn':'b-ok'}">${a.estadoPago==='atrasado'?'Atrasado':'Al día'}</span>
+      </div>`).join('') : '<p class="dim small" style="padding:20px;">Aún no tienes alumnos registrados.</p>';
+  }));
+}
+window.toggleAlumnoForm = function(){
+  const wrap = $('#alumno-form-wrap');
+  if(wrap.innerHTML){ wrap.innerHTML=''; return; }
+  wrap.innerHTML = `
+    <div class="card" style="max-width:420px;">
+      <div class="field"><label>Nombre</label><input id="al-nombre"></div>
+      <div class="field"><label>Teléfono</label><input id="al-tel"></div>
+      <div class="field"><label>Patología / diagnóstico</label><input id="al-patologia" placeholder="ej. Dolor patelofemoral"></div>
+      <div class="field"><label>Modalidad de pago</label><select id="al-modalidad"><option value="mensual">Mensual</option><option value="por_sesiones">Cada N sesiones</option></select></div>
+      <div class="field"><label>Monto por sesión (CLP)</label><input id="al-monto" type="number"></div>
+      <button class="btn btn-p" onclick="crearAlumno()">Guardar alumno</button>
+    </div>`;
+};
+window.crearAlumno = async function(){
+  const nombre = $('#al-nombre').value.trim();
+  if(!nombre) return alert('El nombre es obligatorio.');
+  await addDoc(collection(db,'kinesiologos',STATE.uid,'alumnos'), {
+    nombre, telefono: $('#al-tel').value, patologia: $('#al-patologia').value,
+    modalidadPago: $('#al-modalidad').value, montoSesion: Number($('#al-monto').value)||0,
+    estadoPago: 'al_dia', creadoEl: new Date().toISOString()
+  });
+  $('#alumno-form-wrap').innerHTML = '';
+};
+window.abrirAlumno = function(id){ STATE.alumnoAbierto = id; renderAlumnoDetalle(id); };
+
+/* ===================== ALUMNO DETALLE (PLANES) ===================== */
+function renderAlumnoDetalle(id){
+  clearUnsubs();
+  $('#main').innerHTML = `
+    <div class="row" style="margin-bottom:10px;"><a href="#" class="dim small" onclick="goPage('alumnos');return false;">← Volver a alumnos</a><button class="btn btn-s btn-sm no-print" onclick="window.print()">🖨️ Imprimir / PDF</button></div>
+    <div id="alumno-header"></div>
+    <div class="grid2" style="max-width:500px;margin-bottom:20px;" id="alumno-info"></div>
+    <div class="row" style="margin-bottom:14px;"><h2>Plan de trabajo</h2>
+      <div class="row" style="gap:8px;">
+        <button id="btn-ver-arch" class="btn btn-s hidden" onclick="toggleArchivados()">Ver archivados</button>
+        <button class="btn btn-p" onclick="toggleNuevoPlan()">+ Nuevo plan</button>
+      </div>
+    </div>
+    <div id="nuevo-plan-wrap"></div>
+    <div id="archivados-wrap"></div>
+    <div id="plan-actual"></div>
+  `;
+  STATE.unsubs.push(onSnapshot(doc(db,'kinesiologos',STATE.uid,'alumnos',id), snap=>{
+    if(!snap.exists()) return;
+    const a = snap.data();
+    $('#alumno-header').innerHTML = `<h1>${esc(a.nombre)}</h1><p class="dim" style="margin-top:-8px;">${esc(a.patologia||'Sin diagnóstico registrado')}</p>`;
+    $('#alumno-info').innerHTML = `<div class="card"><div class="small dim">Teléfono</div><div>${esc(a.telefono||'—')}</div></div><div class="card"><div class="small dim">Monto sesión</div><div>$${a.montoSesion||0}</div></div>`;
+  }));
+
+  STATE.unsubs.push(onSnapshot(query(collection(db,'kinesiologos',STATE.uid,'alumnos',id,'planes'), orderBy('creadoEl','desc')), snap=>{
+    const planes = snap.docs.map(d=>({id:d.id,...d.data()}));
+    window._planesCache = planes;
+    if(!STATE.planActivoId[id]){
+      const activo = planes.find(p=>p.estado==='activo');
+      STATE.planActivoId[id] = activo?.id || planes[0]?.id || null;
+    }
+    const arch = planes.filter(p=>p.estado==='archivado');
+    $('#btn-ver-arch').classList.toggle('hidden', arch.length===0);
+    $('#btn-ver-arch').textContent = `Ver archivados (${arch.length})`;
+    pintarPlanActual(id);
+  }));
+}
+window.toggleNuevoPlan = function(){
+  const wrap = $('#nuevo-plan-wrap');
+  if(wrap.innerHTML){ wrap.innerHTML=''; return; }
+  wrap.innerHTML = `
+    <div class="card" style="max-width:420px;">
+      <div class="field"><label>Nombre del plan (opcional)</label><input id="np-nombre" placeholder="ej. Fase 1 post-cirugía"></div>
+      <div class="field"><label>Organizar por</label><select id="np-tipo"><option value="sesiones">Sesiones</option><option value="dias">Días</option><option value="semanas">Semanas</option></select></div>
+      <div class="field"><label>¿Cuántas?</label><input id="np-cant" type="number" min="1" value="6"></div>
+      <p class="small dim">El plan activo anterior (si hay) se archivará automáticamente.</p>
+      <button class="btn btn-p" onclick="crearPlan('${STATE.alumnoAbierto}')">Crear plan</button>
+    </div>`;
+};
+window.crearPlan = async function(alumnoId){
+  const cantidad = Math.max(1, Number($('#np-cant').value)||1);
+  const tipo = $('#np-tipo').value;
+  const nombre = $('#np-nombre').value;
+  const planes = window._planesCache||[];
+  const batch = writeBatch(db);
+  planes.filter(p=>p.estado==='activo').forEach(p=>batch.update(doc(db,'kinesiologos',STATE.uid,'alumnos',alumnoId,'planes',p.id),{estado:'archivado'}));
+  await batch.commit();
+  const planRef = await addDoc(collection(db,'kinesiologos',STATE.uid,'alumnos',alumnoId,'planes'), { tipo, cantidad, nombre, estado:'activo', creadoEl:new Date().toISOString() });
+  const batch2 = writeBatch(db);
+  for(let i=1;i<=cantidad;i++){
+    const uref = doc(collection(db,'kinesiologos',STATE.uid,'alumnos',alumnoId,'planes',planRef.id,'unidades'));
+    batch2.set(uref, { numero:i, ejercicios:[] });
+  }
+  await batch2.commit();
+  STATE.planActivoId[alumnoId] = planRef.id;
+  $('#nuevo-plan-wrap').innerHTML = '';
+};
+window.toggleArchivados = function(){
+  const wrap = $('#archivados-wrap');
+  if(wrap.innerHTML){ wrap.innerHTML=''; return; }
+  const arch = (window._planesCache||[]).filter(p=>p.estado==='archivado');
+  wrap.innerHTML = `<div class="card"><div class="small dim" style="margin-bottom:8px;">Planes archivados</div>${arch.map(p=>`
+    <div class="row" style="padding:6px 0;border-bottom:1px solid var(--bd);">
+      <span>${esc(p.nombre||('Plan por '+p.tipo))} · ${p.cantidad} ${ETIQ[p.tipo].toLowerCase()}(s)</span>
+      <div class="row" style="gap:6px;"><button class="btn btn-s btn-sm" onclick="verPlan('${p.id}')">Ver</button><button class="btn btn-s btn-sm" onclick="reactivarPlan('${p.id}')">Reactivar</button></div>
+    </div>`).join('')}</div>`;
+};
+window.verPlan = function(planId){ STATE.planActivoId[STATE.alumnoAbierto] = planId; pintarPlanActual(STATE.alumnoAbierto); };
+window.reactivarPlan = async function(planId){
+  const alumnoId = STATE.alumnoAbierto;
+  const planes = window._planesCache||[];
+  const batch = writeBatch(db);
+  planes.filter(p=>p.estado==='activo').forEach(p=>batch.update(doc(db,'kinesiologos',STATE.uid,'alumnos',alumnoId,'planes',p.id),{estado:'archivado'}));
+  batch.update(doc(db,'kinesiologos',STATE.uid,'alumnos',alumnoId,'planes',planId), {estado:'activo'});
+  await batch.commit();
+  STATE.planActivoId[alumnoId] = planId;
+};
+
+let unsubUnidades = null;
+function pintarPlanActual(alumnoId){
+  const planId = STATE.planActivoId[alumnoId];
+  const plan = (window._planesCache||[]).find(p=>p.id===planId);
+  if(!plan){ $('#plan-actual').innerHTML = '<p class="dim small">Este alumno todavía no tiene ningún plan. Crea uno con "+ Nuevo plan".</p>'; return; }
+  if(unsubUnidades) unsubUnidades();
+  unsubUnidades = onSnapshot(query(collection(db,'kinesiologos',STATE.uid,'alumnos',alumnoId,'planes',planId,'unidades'), orderBy('numero')), snap=>{
+    const unidades = snap.docs.map(d=>({id:d.id,...d.data()}));
+    window._unidadesCache = unidades;
+    $('#plan-actual').innerHTML = `
+      <div class="row" style="margin-bottom:12px;"><b>${esc(plan.nombre||('Plan por '+plan.tipo))}</b><span class="badge ${plan.estado==='activo'?'b-ok':'b-warn'}">${plan.estado==='activo'?'Activo':'Archivado'}</span></div>
+      <div class="stack">${unidades.map(u=>unidadHTML(u, plan)).join('')}</div>
+    `;
+  });
+  STATE.unsubs.push(()=>unsubUnidades&&unsubUnidades());
+}
+function unidadHTML(u, plan){
+  const abierta = STATE._unidadAbierta===u.id;
+  return `
+    <div class="card">
+      <div class="row" style="cursor:pointer;" onclick="toggleUnidad('${u.id}')"><b>${ETIQ[plan.tipo]} ${u.numero}</b><span class="small dim">${(u.ejercicios||[]).length} ejercicios</span></div>
+      ${abierta ? unidadDetalleHTML(u) : ''}
+    </div>`;
+}
+window.toggleUnidad = function(uid){ STATE._unidadAbierta = STATE._unidadAbierta===uid ? null : uid; pintarPlanActual(STATE.alumnoAbierto); };
+function unidadDetalleHTML(u){
+  const ejercicios = u.ejercicios||[];
+  return `
+    <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:14px;">
+      <div class="field">
+        <label>Nota de evolución</label>
+        <textarea id="nota-${u.id}" placeholder="ej. Refiere menos dolor...">${esc(u.notaEvolucion||'')}</textarea>
+        <button class="btn btn-s btn-sm" style="margin-top:6px;" onclick="guardarNota('${u.id}')">Guardar nota</button>
+      </div>
+      ${ejercicios.map((ej,i)=>`
+        <div class="row" style="padding:8px 0;border-bottom:1px solid var(--bd);">
+          <div><div>${esc(ej.nombre)}</div><div class="small dim">${ej.series&&ej.repeticiones?`${ej.series}x${ej.repeticiones}`:''} ${ej.link?`· <a href="${esc(ej.link)}" target="_blank" style="color:var(--or)">ver video</a>`:''}</div></div>
+          <button class="btn btn-s btn-sm" onclick="quitarEjercicio('${u.id}', ${i})">Quitar</button>
+        </div>`).join('')}
+      <div class="row" style="margin-top:12px;gap:8px;">
+        <select id="cat-${u.id}" style="max-width:200px;" onchange="filtrarBib('${u.id}')"><option>Todas</option>${CATEGORIAS.map(c=>`<option>${c}</option>`).join('')}</select>
+        <input id="buscar-${u.id}" placeholder="Buscar ejercicio..." style="max-width:200px;" oninput="filtrarBib('${u.id}')">
+      </div>
+      <div id="bib-res-${u.id}" style="max-height:150px;overflow-y:auto;margin-top:8px;"></div>
+      <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap;">
+        <input id="man-nombre-${u.id}" placeholder="Ejercicio propio" style="max-width:160px;">
+        <input id="man-series-${u.id}" placeholder="Series" style="max-width:70px;">
+        <input id="man-reps-${u.id}" placeholder="Reps" style="max-width:70px;">
+        <label class="small dim" style="display:flex;align-items:center;gap:4px;width:auto;"><input type="checkbox" id="man-guardar-${u.id}" style="width:auto;"> Guardar en mi biblioteca</label>
+        <button class="btn btn-p btn-sm" onclick="agregarManual('${u.id}')">Agregar</button>
+      </div>
+    </div>`;
+}
+window.guardarNota = async function(uid){
+  const texto = $('#nota-'+uid).value;
+  await updateDoc(doc(db,'kinesiologos',STATE.uid,'alumnos',STATE.alumnoAbierto,'planes',STATE.planActivoId[STATE.alumnoAbierto],'unidades',uid), { notaEvolucion: texto });
+};
+window.quitarEjercicio = async function(uid, idx){
+  const u = (window._unidadesCache||[]).find(x=>x.id===uid);
+  if(!u) return;
+  const ej = u.ejercicios[idx];
+  await updateDoc(doc(db,'kinesiologos',STATE.uid,'alumnos',STATE.alumnoAbierto,'planes',STATE.planActivoId[STATE.alumnoAbierto],'unidades',uid), { ejercicios: arrayRemove(ej) });
+};
+window.agregarManual = async function(uid){
+  const nombre = $('#man-nombre-'+uid).value.trim();
+  if(!nombre) return;
+  const series = $('#man-series-'+uid).value, repeticiones = $('#man-reps-'+uid).value;
+  const guardar = $('#man-guardar-'+uid).checked;
+  const nuevo = { nombre, link:'', series, repeticiones, origen:'manual' };
+  await updateDoc(doc(db,'kinesiologos',STATE.uid,'alumnos',STATE.alumnoAbierto,'planes',STATE.planActivoId[STATE.alumnoAbierto],'unidades',uid), { ejercicios: arrayUnion(nuevo) });
+  if(guardar){
+    const cat = $('#cat-'+uid).value;
+    await addDoc(collection(db,'kinesiologos',STATE.uid,'biblioteca_personal'), { nombre, series, repeticiones, link:'', categoria: cat!=='Todas'?cat:'Otra', creadoEl:new Date().toISOString() });
+  }
+  $('#man-nombre-'+uid).value=''; $('#man-series-'+uid).value=''; $('#man-reps-'+uid).value='';
+};
+
+let bibGeneralCache = [], bibPersonalCache = [];
+onSnapshot(collection(db,'biblioteca_general'), snap=>{ bibGeneralCache = snap.docs.map(d=>({id:d.id,...d.data(),origenTipo:'General'})); });
+function watchBibPersonal(){
+  if(!STATE.uid || STATE.role!=='kine') return;
+  onSnapshot(collection(db,'kinesiologos',STATE.uid,'biblioteca_personal'), snap=>{ bibPersonalCache = snap.docs.map(d=>({id:d.id,...d.data(),origenTipo:'Mía'})); });
+}
+window.filtrarBib = function(uid){
+  const cat = $('#cat-'+uid).value;
+  const texto = ($('#buscar-'+uid).value||'').toLowerCase();
+  const todas = [...bibGeneralCache, ...bibPersonalCache].filter(e=>{
+    const c = cat==='Todas' || e.categoria===cat;
+    const t = (e.nombre||'').toLowerCase().includes(texto);
+    return c && t;
+  }).slice(0,10);
+  $('#bib-res-'+uid).innerHTML = todas.length ? todas.map(ej=>`
+    <div class="row" style="padding:5px 0;font-size:13px;">
+      <span>${esc(ej.nombre)} <span class="dim">(${ej.origenTipo}${ej.categoria?' · '+esc(ej.categoria):''})</span></span>
+      <button class="btn btn-s btn-sm" onclick='agregarDeBiblioteca("${uid}", ${JSON.stringify(ej).replace(/'/g,"&apos;")})'>Agregar</button>
+    </div>`).join('') : '<p class="small dim">Sin resultados.</p>';
+};
+window.agregarDeBiblioteca = async function(uid, ej){
+  await updateDoc(doc(db,'kinesiologos',STATE.uid,'alumnos',STATE.alumnoAbierto,'planes',STATE.planActivoId[STATE.alumnoAbierto],'unidades',uid), {
+    ejercicios: arrayUnion({ nombre:ej.nombre, link:ej.link||'', series:ej.series||'', repeticiones:ej.repeticiones||'', origen:'biblioteca' })
+  });
+};
+
+/* ===================== PAGOS ===================== */
+function renderPagos(){
+  $('#main').innerHTML = `<h1 style="margin-bottom:18px;">Pagos</h1>
+    <div class="grid2" style="margin-bottom:18px;">
+      <div class="card"><div class="small dim">Al día</div><div id="pg-aldia" style="font-size:26px;font-weight:700;color:var(--ok);">0</div></div>
+      <div class="card"><div class="small dim">Atrasados</div><div id="pg-atrasados" style="font-size:26px;font-weight:700;color:var(--rd);">0</div></div>
+    </div>
+    <div id="pagos-list" class="card" style="padding:0;overflow:hidden;"></div>`;
+  STATE.unsubs.push(onSnapshot(query(collection(db,'kinesiologos',STATE.uid,'alumnos'), orderBy('nombre')), snap=>{
+    const rows = snap.docs.map(d=>({id:d.id,...d.data()}));
+    $('#pg-aldia').textContent = rows.filter(a=>a.estadoPago!=='atrasado').length;
+    $('#pg-atrasados').textContent = rows.filter(a=>a.estadoPago==='atrasado').length;
+    $('#pagos-list').innerHTML = rows.map(a=>`
+      <div class="row" style="padding:14px 20px;border-bottom:1px solid var(--bd);">
+        <div><b>${esc(a.nombre)}</b><div class="small dim">${a.modalidadPago==='mensual'?'Pago mensual':'Pago por sesiones'} · $${a.montoSesion||0}/sesión${a.ultimoPago?` · Último pago: ${a.ultimoPago}`:''}</div></div>
+        <div class="row" style="gap:10px;">
+          <span class="badge ${a.estadoPago==='atrasado'?'b-warn':'b-ok'}">${a.estadoPago==='atrasado'?'Atrasado':'Al día'}</span>
+          ${a.estadoPago==='atrasado' ? `<button class="btn btn-p btn-sm" onclick="marcarPagado('${a.id}')">Marcar pagado</button>` : `<button class="btn btn-s btn-sm" onclick="marcarAtrasado('${a.id}')">Marcar atrasado</button>`}
+        </div>
+      </div>`).join('');
+  }));
+}
+window.marcarPagado = async function(alumnoId){
+  const snap = await getDoc(doc(db,'kinesiologos',STATE.uid,'alumnos',alumnoId));
+  const a = snap.data();
+  await updateDoc(doc(db,'kinesiologos',STATE.uid,'alumnos',alumnoId), { estadoPago:'al_dia', ultimoPago:new Date().toISOString().slice(0,10) });
+  await addDoc(collection(db,'kinesiologos',STATE.uid,'pagos'), { alumnoId, alumnoNombre:a.nombre, monto:a.montoSesion||0, fecha:new Date().toISOString().slice(0,10) });
+};
+window.marcarAtrasado = async function(alumnoId){
+  await updateDoc(doc(db,'kinesiologos',STATE.uid,'alumnos',alumnoId), { estadoPago:'atrasado' });
+};
+
+/* ===================== BIBLIOTECA ===================== */
+function renderBiblioteca(){
+  if(!STATE._bibTab) STATE._bibTab = 'general';
+  $('#main').innerHTML = `
+    <div class="row" style="margin-bottom:18px;"><h1>Biblioteca de ejercicios</h1><button class="btn btn-p ${STATE._bibTab==='personal'?'':'hidden'}" id="btn-add-ej" onclick="toggleEjForm()">+ Agregar ejercicio</button></div>
+    <div class="row" style="gap:8px;margin-bottom:16px;">
+      <button class="btn ${STATE._bibTab==='general'?'btn-p':'btn-s'}" onclick="setBibTab('general')">Biblioteca general</button>
+      <button class="btn ${STATE._bibTab==='personal'?'btn-p':'btn-s'}" onclick="setBibTab('personal')">Mi biblioteca personal</button>
+    </div>
+    <select id="bib-filtro-cat" style="max-width:260px;margin-bottom:16px;" onchange="pintarBibGrid()"><option>Todas</option>${CATEGORIAS.map(c=>`<option>${c}</option>`).join('')}</select>
+    <div id="ej-form-wrap"></div>
+    <div id="bib-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;"></div>
+  `;
+  STATE.unsubs.push(onSnapshot(collection(db,'biblioteca_general'), snap=>{ window._bibGen = snap.docs.map(d=>({id:d.id,...d.data()})); pintarBibGrid(); }));
+  STATE.unsubs.push(onSnapshot(collection(db,'kinesiologos',STATE.uid,'biblioteca_personal'), snap=>{ window._bibPer = snap.docs.map(d=>({id:d.id,...d.data()})); pintarBibGrid(); }));
+}
+window.setBibTab = function(t){ STATE._bibTab=t; renderBiblioteca(); };
+window.pintarBibGrid = function(){
+  const cat = $('#bib-filtro-cat') ? $('#bib-filtro-cat').value : 'Todas';
+  const lista = (STATE._bibTab==='general' ? (window._bibGen||[]) : (window._bibPer||[])).filter(e=>cat==='Todas'||e.categoria===cat);
+  $('#bib-grid').innerHTML = lista.length ? lista.map(ej=>`
+    <div class="card">
+      <b>${esc(ej.nombre)}</b><div class="small" style="color:var(--or);margin-top:2px;">${esc(ej.categoria||'')}</div>
+      ${(ej.series||ej.repeticiones)?`<div class="small dim" style="margin-top:6px;">${esc(ej.series)}x${esc(ej.repeticiones)}</div>`:''}
+      ${ej.notas?`<div class="small dim" style="margin-top:6px;">${esc(ej.notas)}</div>`:''}
+      ${ej.link?`<a href="${esc(ej.link)}" target="_blank" style="color:var(--or);font-size:13px;display:inline-block;margin-top:8px;">▶ Ver video</a>`:''}
+    </div>`).join('') : '<p class="dim small">No hay ejercicios en esta categoría.</p>';
+};
+window.toggleEjForm = function(){
+  const wrap = $('#ej-form-wrap');
+  if(wrap.innerHTML){ wrap.innerHTML=''; return; }
+  wrap.innerHTML = `
+    <div class="card" style="max-width:420px;">
+      <div class="field"><input id="ej-nombre" placeholder="Nombre del ejercicio"></div>
+      <div class="field"><select id="ej-cat">${CATEGORIAS.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div class="field"><input id="ej-link" placeholder="Link de YouTube (opcional)"></div>
+      <div class="row" style="gap:8px;"><input id="ej-series" placeholder="Series"><input id="ej-reps" placeholder="Repeticiones"></div>
+      <div class="field" style="margin-top:10px;"><textarea id="ej-notas" placeholder="Notas / tips"></textarea></div>
+      <button class="btn btn-p" onclick="crearEjercicioPersonal()">Guardar</button>
+    </div>`;
+};
+window.crearEjercicioPersonal = async function(){
+  const nombre = $('#ej-nombre').value.trim();
+  if(!nombre) return;
+  await addDoc(collection(db,'kinesiologos',STATE.uid,'biblioteca_personal'), {
+    nombre, categoria: $('#ej-cat').value, link: $('#ej-link').value, series: $('#ej-series').value, repeticiones: $('#ej-reps').value, notas: $('#ej-notas').value, creadoEl: new Date().toISOString()
+  });
+  $('#ej-form-wrap').innerHTML = '';
+};
+
+/* Activar carga de biblioteca personal apenas hay uid */
+const _origOnAuth = true;
+setInterval(()=>{ if(STATE.uid && STATE.role==='kine' && !window._bibPerWatching){ window._bibPerWatching = true; } }, 500);
+
+/* ===================== ADMIN ===================== */
+let adminKinesCache = [];
+function initAdminPanel(){
+  onSnapshot(collection(db,'kinesiologos'), snap=>{
+    adminKinesCache = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderAdminStats();
+    renderAdminList();
+  });
+}
+function renderAdminStats(){
+  const activos = adminKinesCache.filter(k=>k.activo);
+  const ingreso = activos.reduce((s,k)=>s+(Number(k.montoMensual)||0),0);
+  $('#admin-stats').innerHTML = `
+    <div class="card"><div class="small dim">Kinesiólogos activos</div><div style="font-size:26px;font-weight:700;color:var(--or);">${activos.length}</div></div>
+    <div class="card"><div class="small dim">Total registrados</div><div style="font-size:26px;font-weight:700;">${adminKinesCache.length}</div></div>
+    <div class="card"><div class="small dim">Ingreso mensual estimado</div><div style="font-size:26px;font-weight:700;color:var(--ok);">$${ingreso}</div></div>
+  `;
+}
+window.toggleAdminForm = function(){
+  const wrap = $('#admin-form-wrap');
+  if(wrap.innerHTML){ wrap.innerHTML=''; return; }
+  wrap.innerHTML = `
+    <div class="card" style="max-width:460px;">
+      <div class="field"><input id="nk-nombre" placeholder="Nombre completo"></div>
+      <div class="field"><input id="nk-email" type="email" placeholder="Correo"></div>
+      <div class="field"><input id="nk-pass" placeholder="Contraseña inicial (mín. 6 caracteres)"></div>
+      <div class="field"><input id="nk-tel" placeholder="Teléfono"></div>
+      <div class="field"><input id="nk-rut" placeholder="RUT"></div>
+      <div class="field"><input id="nk-ig" placeholder="Instagram / redes sociales"></div>
+      <div class="field"><input id="nk-ref" placeholder="Referido por (opcional)"></div>
+      <div class="field"><label>Plan de arriendo</label><select id="nk-plan"><option value="basico">Básico</option><option value="premium">Premium</option></select></div>
+      <div class="field"><label>Método de pago</label><select id="nk-metodo"><option value="transferencia">Transferencia</option><option value="efectivo">Efectivo</option><option value="webpay">Webpay</option></select></div>
+      <div class="field"><input id="nk-monto" type="number" placeholder="Monto mensual del arriendo (CLP)"></div>
+      <div class="field"><input id="nk-maxal" type="number" placeholder="Máximo de alumnos permitidos (opcional)"></div>
+      <div class="field"><label>Fecha en que empieza a arrendar</label><input id="nk-inicio" type="date"></div>
+      <div class="field"><label>Próxima fecha de pago</label><input id="nk-prox" type="date"></div>
+      <div class="field"><textarea id="nk-notas" placeholder="Notas internas (solo tú las ves)"></textarea></div>
+      <div id="nk-err" class="small" style="color:var(--rd);"></div>
+      <button class="btn btn-p" onclick="crearKineAdmin()">Crear cuenta</button>
+    </div>`;
+};
+window.crearKineAdmin = async function(){
+  const password = $('#nk-pass').value;
+  if(password.length < 6){ $('#nk-err').textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+  const data = {
+    nombre: $('#nk-nombre').value, email: $('#nk-email').value, password,
+    telefono: $('#nk-tel').value, rut: $('#nk-rut').value, instagram: $('#nk-ig').value,
+    referidoPor: $('#nk-ref').value, planArriendo: $('#nk-plan').value, metodoPago: $('#nk-metodo').value,
+    montoMensual: $('#nk-monto').value, maxAlumnos: $('#nk-maxal').value,
+    fechaInicio: $('#nk-inicio').value, proximoPago: $('#nk-prox').value, notasInternas: $('#nk-notas').value,
+  };
+  try{
+    const secondaryApp = initializeApp(firebaseConfig, 'secondary-'+Date.now());
+    const secondaryAuth = getAuth(secondaryApp);
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, data.email, data.password);
+    await updateProfile(cred.user, { displayName: data.nombre });
+    await setDoc(doc(db,'kinesiologos',cred.user.uid), {
+      nombre:data.nombre, email:data.email, telefono:data.telefono||'', rut:data.rut||'',
+      instagram:data.instagram||'', referidoPor:data.referidoPor||'', planArriendo:data.planArriendo||'basico',
+      metodoPago:data.metodoPago||'transferencia', montoMensual:Number(data.montoMensual)||0,
+      maxAlumnos:data.maxAlumnos?Number(data.maxAlumnos):null, fechaInicio:data.fechaInicio||null,
+      proximoPago:data.proximoPago||null, notasInternas:data.notasInternas||'', historialPagos:[],
+      activo:true, creadoEl: serverTimestamp(), creadoPorAdmin:true
+    });
+    await signOut(secondaryAuth);
+    await deleteApp(secondaryApp);
+    $('#admin-form-wrap').innerHTML = '';
+  }catch(err){
+    $('#nk-err').textContent = err.code==='auth/email-already-in-use' ? 'Ese correo ya está en uso.' : 'No se pudo crear la cuenta.';
+  }
+};
+function fmtFecha(v){
+  if(!v) return '—';
+  if(v.toDate) return v.toDate().toLocaleString('es-CL');
+  return v;
+}
+function renderAdminList(){
+  $('#admin-list').innerHTML = adminKinesCache.length ? adminKinesCache.map(k=>{
+    const dias = k.proximoPago ? Math.ceil((new Date(k.proximoPago)-new Date())/86400000) : null;
+    const porVencer = dias!==null && dias<=5;
+    const editando = STATE._editandoKine===k.id;
+    return `
+    <div style="padding:16px 20px;border-bottom:1px solid var(--bd);">
+      <div class="row">
+        <div>
+          <b>${esc(k.nombre)}</b>
+          <div class="small dim">${esc(k.email)} ${k.telefono?'· '+esc(k.telefono):''} ${k.montoMensual?'· $'+k.montoMensual+'/mes':''} ${k.proximoPago?'· Próximo pago: '+k.proximoPago:''} ${k.maxAlumnos?'· Máx. '+k.maxAlumnos+' alumnos':''}</div>
+          <div class="small dim" style="margin-top:2px;">Último acceso: ${fmtFecha(k.ultimoAcceso)}</div>
+        </div>
+        <div class="row" style="gap:8px;">
+          ${porVencer?'<span class="badge b-warn">Vence pronto</span>':''}
+          <span class="badge ${k.activo?'b-ok':'b-warn'}">${k.activo?'Activo':'Desactivado'}</span>
+          <button class="btn btn-s btn-sm" onclick="toggleEdicionKine('${k.id}')">${editando?'Cerrar':'Editar ficha'}</button>
+          <button class="btn btn-s btn-sm" onclick="toggleActivoKine('${k.id}', ${k.activo})">${k.activo?'Desactivar':'Activar'}</button>
+          <button class="btn btn-d btn-sm" onclick="eliminarKineAdmin('${k.id}', '${esc(k.nombre)}')">Eliminar</button>
+        </div>
+      </div>
+      ${editando ? fichaEdicionHTML(k) : ''}
+    </div>`;
+  }).join('') : '<p class="dim small" style="padding:20px;">Aún no has creado ningún kinesiólogo.</p>';
+}
+function fichaEdicionHTML(k){
+  const hist = k.historialPagos||[];
+  return `
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bd);display:grid;gap:10px;max-width:420px;">
+      <div class="field"><label>Nombre</label><input id="ek-nombre-${k.id}" value="${esc(k.nombre||'')}"></div>
+      <div class="field"><label>Teléfono</label><input id="ek-tel-${k.id}" value="${esc(k.telefono||'')}"></div>
+      <div class="field"><label>RUT</label><input id="ek-rut-${k.id}" value="${esc(k.rut||'')}"></div>
+      <div class="field"><label>Instagram</label><input id="ek-ig-${k.id}" value="${esc(k.instagram||'')}"></div>
+      <div class="field"><label>Referido por</label><input id="ek-ref-${k.id}" value="${esc(k.referidoPor||'')}"></div>
+      <div class="field"><label>Plan de arriendo</label><select id="ek-plan-${k.id}"><option value="basico" ${k.planArriendo==='basico'?'selected':''}>Básico</option><option value="premium" ${k.planArriendo==='premium'?'selected':''}>Premium</option></select></div>
+      <div class="field"><label>Método de pago</label><select id="ek-metodo-${k.id}"><option value="transferencia" ${k.metodoPago==='transferencia'?'selected':''}>Transferencia</option><option value="efectivo" ${k.metodoPago==='efectivo'?'selected':''}>Efectivo</option><option value="webpay" ${k.metodoPago==='webpay'?'selected':''}>Webpay</option></select></div>
+      <div class="field"><label>Monto mensual</label><input id="ek-monto-${k.id}" type="number" value="${k.montoMensual||0}"></div>
+      <div class="field"><label>Máximo de alumnos</label><input id="ek-maxal-${k.id}" type="number" value="${k.maxAlumnos||''}"></div>
+      <div class="field"><label>Fecha en que empezó a arrendar</label><input id="ek-inicio-${k.id}" type="date" value="${k.fechaInicio||''}"></div>
+      <div class="field"><label>Próxima fecha de pago</label><input id="ek-prox-${k.id}" type="date" value="${k.proximoPago||''}"></div>
+      <div class="field"><label>Notas internas</label><textarea id="ek-notas-${k.id}">${esc(k.notasInternas||'')}</textarea></div>
+      <div class="field">
+        <label>Historial de pagos de arriendo</label>
+        <div style="max-height:100px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px;padding:8px;">
+          ${hist.length? [...hist].reverse().map(p=>`<div class="small">${p.fecha} — $${p.monto}</div>`).join('') : '<p class="small dim" style="margin:0;">Sin pagos registrados.</p>'}
+        </div>
+        <button class="btn btn-s btn-sm" style="margin-top:6px;" onclick="marcarPagoRecibido('${k.id}')">+ Registrar pago recibido hoy</button>
+      </div>
+      <div class="row" style="gap:8px;">
+        <button class="btn btn-p" onclick="guardarEdicionKine('${k.id}')">Guardar cambios</button>
+        <button class="btn btn-s" onclick="enviarRecuperacionKine('${k.id}', '${esc(k.email)}')">Enviar recuperación de clave</button>
+      </div>
+      <div id="ek-aviso-${k.id}" class="small" style="color:var(--ok);"></div>
+    </div>`;
+}
+window.toggleEdicionKine = function(id){ STATE._editandoKine = STATE._editandoKine===id ? null : id; renderAdminList(); };
+window.toggleActivoKine = async function(id, activo){ await updateDoc(doc(db,'kinesiologos',id), { activo: !activo }); };
+window.eliminarKineAdmin = async function(id, nombre){
+  if(!confirm(`¿Eliminar completamente a ${nombre}? Esto borra todos sus alumnos, agenda y pagos. No se puede deshacer.`)) return;
+  const alumnosSnap = await getDocs(collection(db,'kinesiologos',id,'alumnos'));
+  for(const aDoc of alumnosSnap.docs){
+    const planesSnap = await getDocs(collection(db,'kinesiologos',id,'alumnos',aDoc.id,'planes'));
+    for(const pDoc of planesSnap.docs){
+      const uSnap = await getDocs(collection(db,'kinesiologos',id,'alumnos',aDoc.id,'planes',pDoc.id,'unidades'));
+      for(const u of uSnap.docs) await deleteDoc(u.ref);
+      await deleteDoc(pDoc.ref);
+    }
+    await deleteDoc(aDoc.ref);
+  }
+  for(const col of ['agenda','pagos','biblioteca_personal']){
+    const snap = await getDocs(collection(db,'kinesiologos',id,col));
+    for(const d of snap.docs) await deleteDoc(d.ref);
+  }
+  await deleteDoc(doc(db,'kinesiologos',id));
+};
+window.guardarEdicionKine = async function(id){
+  await updateDoc(doc(db,'kinesiologos',id), {
+    nombre: $('#ek-nombre-'+id).value, telefono: $('#ek-tel-'+id).value, rut: $('#ek-rut-'+id).value,
+    instagram: $('#ek-ig-'+id).value, referidoPor: $('#ek-ref-'+id).value, planArriendo: $('#ek-plan-'+id).value,
+    metodoPago: $('#ek-metodo-'+id).value, montoMensual: Number($('#ek-monto-'+id).value)||0,
+    maxAlumnos: $('#ek-maxal-'+id).value ? Number($('#ek-maxal-'+id).value) : null,
+    fechaInicio: $('#ek-inicio-'+id).value || null, proximoPago: $('#ek-prox-'+id).value || null,
+    notasInternas: $('#ek-notas-'+id).value
+  });
+  STATE._editandoKine = null;
+};
+window.marcarPagoRecibido = async function(id){
+  const k = adminKinesCache.find(x=>x.id===id);
+  await updateDoc(doc(db,'kinesiologos',id), { historialPagos: arrayUnion({ fecha: new Date().toISOString().slice(0,10), monto: k?.montoMensual||0 }) });
+};
+window.enviarRecuperacionKine = async function(id, email){
+  try{
+    await sendPasswordResetEmail(auth, email);
+    $('#ek-aviso-'+id).textContent = 'Correo de recuperación enviado a '+email+'.';
+  }catch(err){
+    $('#ek-aviso-'+id).textContent = 'No se pudo enviar el correo.';
+    $('#ek-aviso-'+id).style.color = 'var(--rd)';
+  }
+};
+
+/* Watch personal library once uid is known (for biblioteca page reactivity when navigating) */
+const _watchInterval = setInterval(()=>{
+  if(STATE.uid && STATE.role==='kine'){
+    watchBibPersonal();
+    clearInterval(_watchInterval);
+  }
+}, 300);
+
+</script>
+</body>
 </html>
